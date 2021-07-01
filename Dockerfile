@@ -1,12 +1,5 @@
-# Smallest base image, latests stable image
-# Alpine would be nice, but it's linked again musl and breaks the bitcoin core download binary
-#FROM alpine:latest
-
 FROM ubuntu:latest as builder
 
-# Testing: gosu
-#RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories \
-#    && apk add --update --no-cache gnupg gosu gcompat libgcc
 RUN apt update \
     && apt install -y --no-install-recommends \
         ca-certificates \
@@ -14,9 +7,9 @@ RUN apt update \
         gnupg \
     && apt clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ARG VERSION=0.21.1
+ARG VERSION=0.21.1.knots20210629
 ARG ARCH=x86_64
-ARG BITCOIN_CORE_SIGNATURE=01EA5486DE18A882D4C2684590C8019E36C2E964
+ARG BITCOIN_KNOTS_SIGNATURE=E463A93F5F3117EEDE6C7316BD02942421F4889F
 
 # Don't use base image's bitcoin package for a few reasons:
 # 1. Would need to use ppa/latest repo for the latest release.
@@ -24,11 +17,11 @@ ARG BITCOIN_CORE_SIGNATURE=01EA5486DE18A882D4C2684590C8019E36C2E964
 # 3. Verifying pkg signature from main website should inspire confidence and reduce chance of surprises.
 # Instead fetch, verify, and extract to Docker image
 RUN cd /tmp \
-    && wget https://bitcoincore.org/bin/bitcoin-core-${VERSION}/SHA256SUMS.asc \
-    && gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys ${BITCOIN_CORE_SIGNATURE} \
+    && wget https://bitcoinknots.org/files/0.21.x/${VERSION}/SHA256SUMS.asc \
+    && gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys ${BITCOIN_KNOTS_SIGNATURE} \
     && gpg --verify SHA256SUMS.asc \
     && grep bitcoin-${VERSION}-${ARCH}-linux-gnu.tar.gz SHA256SUMS.asc > SHA25SUM \
-    && wget https://bitcoincore.org/bin/bitcoin-core-${VERSION}/bitcoin-${VERSION}-${ARCH}-linux-gnu.tar.gz \
+    && wget https://bitcoinknots.org/files/0.21.x/${VERSION}/bitcoin-${VERSION}-${ARCH}-linux-gnu.tar.gz \
     && sha256sum -c SHA25SUM \
     && tar -xzvf bitcoin-${VERSION}-${ARCH}-linux-gnu.tar.gz -C /opt \
     && ln -sv bitcoin-${VERSION} /opt/bitcoin \
@@ -40,7 +33,7 @@ LABEL maintainer="Kyle Manna <kyle@kylemanna.com>"
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 ENV HOME /bitcoin
-EXPOSE 8332 8333
+EXPOSE 8332 8333 18332 18333
 VOLUME ["/bitcoin/.bitcoin"]
 WORKDIR /bitcoin
 
